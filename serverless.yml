@@ -14,7 +14,7 @@ provider:
     cors: true
 
   environment:
-    # MongoDB
+  
     MONGO_URL: ${env:MONGO_URL, ''}
     DATABASE_NAME: ${env:DATABASE_NAME, ''}
 
