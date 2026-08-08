@@ -1,0 +1,86 @@
+service: todo-deploy
+
+provider:
+  name: aws
+  runtime: python3.11
+
+  region: ${env:AWS_REGION, 'ap-south-1'}
+  stage: ${opt:stage, 'dev'}
+
+  memorySize: 1024
+  timeout: 29
+
+  httpApi:
+    cors: true
+
+  environment:
+    # MongoDB
+    MONGO_URL: ${env:MONGO_URL, ''}
+    DATABASE_NAME: ${env:DATABASE_NAME, ''}
+
+    # JWT
+    SECRET_KEY: ${env:SECRET_KEY, ''}
+    ALGORITHM: ${env:ALGORITHM, 'HS256'}
+    ACCESS_TOKEN_EXPIRE_MINUTES: ${env:ACCESS_TOKEN_EXPIRE_MINUTES, '30'}
+
+    # Application
+    APP_AWS_REGION: ${env:AWS_REGION, 'ap-south-1'}
+    TZ: Asia/Kolkata
+
+
+# =========================================================
+# Lambda Functions
+# =========================================================
+
+functions:
+
+  api:
+    handler: app.main.handler
+
+    events:
+
+      - httpApi:
+          path: /
+          method: ANY
+
+      - httpApi:
+          path: /{proxy+}
+          method: ANY
+
+
+# =========================================================
+# Python Dependencies
+# =========================================================
+
+plugins:
+
+  - serverless-python-requirements
+
+
+custom:
+
+  pythonRequirements:
+    dockerizePip: false
+    slim: true
+
+
+# =========================================================
+# Package
+# =========================================================
+
+package:
+
+  patterns:
+
+    - '!node_modules/**'
+    - '!venv/**'
+    - '!.venv/**'
+    - '!__pycache__/**'
+    - '!**/*.pyc'
+    - '!tests/**'
+    - '!.git/**'
+    - '!.github/**'
+    - '!Dockerfile'
+    - '!docker-compose.yml'
+    - '!.env'
+    - '!.env.*'
