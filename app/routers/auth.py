@@ -20,22 +20,6 @@ router = APIRouter(
 
 
 # =========================
-# SEED ADMIN
-# =========================
-async def seed_admin():
-    admin = await user_collection.find_one({"email": "admin@todo.com"})
-    if not admin:
-        hashed = hash_password("admin123")
-        await user_collection.insert_one({
-            "username": "Admin",
-            "email": "admin@todo.com",
-            "password": hashed,
-            "role": "admin"
-        })
-        print("Seeded default admin user: admin@todo.com / admin123")
-
-
-# =========================
 # REGISTER
 # =========================
 
@@ -235,4 +219,4 @@ async def delete_user(
     await todo_collection.delete_many({"user_id": delete_user_id})
     
     return {"message": "User and their tasks deleted successfully"}
-
+
