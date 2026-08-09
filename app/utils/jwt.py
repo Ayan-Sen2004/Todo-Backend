@@ -1,22 +1,16 @@
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
-from app.config import SECRET_KEY, ALGORITHM,ACCESS_TOKEN_EXPIRE_MINUTES
 
-
-# from dotenv import load_dotenv
-# import os
-
-# load_dotenv()
-
-# SECRET_KEY = os.getenv("SECRET_KEY")
-# ALGORITHM = os.getenv("ALGORITHM", "HS256")
+from app.config import settings
 
 
 def create_access_token(data: dict):
 
     to_encode = data.copy()
 
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.utcnow() + timedelta(
+        minutes=settings.access_token_expire_minutes
+    )
 
     to_encode.update({
         "exp": expire
@@ -24,8 +18,8 @@ def create_access_token(data: dict):
 
     return jwt.encode(
         to_encode,
-        SECRET_KEY,
-        algorithm=ALGORITHM
+        settings.secret_key,
+        algorithm=settings.algorithm
     )
 
 
@@ -35,8 +29,8 @@ def verify_token(token: str):
 
         payload = jwt.decode(
             token,
-            SECRET_KEY,
-            algorithms=[ALGORITHM]
+            settings.secret_key,
+            algorithms=[settings.algorithm]
         )
 
         return payload
