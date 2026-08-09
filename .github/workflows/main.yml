@@ -16,17 +16,17 @@ jobs:
 
     steps:
 
-      # =================================================
-      # Checkout
-      # =================================================
+      # ==========================================
+      # Checkout repository
+      # ==========================================
 
       - name: Checkout repository
         uses: actions/checkout@v4
 
 
-      # =================================================
+      # ==========================================
       # Setup Python
-      # =================================================
+      # ==========================================
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -34,19 +34,19 @@ jobs:
           python-version: "3.11"
 
 
-      # =================================================
+      # ==========================================
       # Setup Node.js
-      # =================================================
+      # ==========================================
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "24"
+          node-version: "20"
 
 
-      # =================================================
-      # Configure AWS
-      # =================================================
+      # ==========================================
+      # Configure AWS credentials
+      # ==========================================
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -56,37 +56,50 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
 
-      # =================================================
+      # ==========================================
       # Install Serverless Framework
-      # =================================================
+      # ==========================================
 
       - name: Install Serverless Framework
         run: npm install -g serverless@3
 
 
-      # =================================================
-      # Install Serverless Python Requirements plugin
-      # =================================================
+      # ==========================================
+      # Install Python requirements plugin
+      # ==========================================
 
-      - name: Install Python Requirements plugin
-        run: npm install --save-dev serverless-python-requirements
+      - name: Install Serverless Python Requirements
+        run: npm install --save-dev serverless-python-requirements@6.1.2
 
 
-      # =================================================
+      # ==========================================
       # Verify Serverless
-      # =================================================
+      # ==========================================
 
       - name: Check Serverless version
         run: serverless --version
 
 
-      # =================================================
+      # ==========================================
+      # Verify Python dependencies
+      # ==========================================
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+
+      # ==========================================
       # Deploy
-      # =================================================
+      # ==========================================
 
       - name: Deploy to AWS
         run: serverless deploy --stage dev
         env:
+
+          # AWS
+          AWS_REGION: ${{ secrets.AWS_REGION }}
 
           # MongoDB
           MONGO_URL: ${{ secrets.MONGO_URL }}
@@ -96,6 +109,3 @@ jobs:
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
           ALGORITHM: ${{ secrets.ALGORITHM }}
           ACCESS_TOKEN_EXPIRE_MINUTES: ${{ secrets.ACCESS_TOKEN_EXPIRE_MINUTES }}
-
-          # AWS
-          AWS_REGION: ${{ secrets.AWS_REGION }}

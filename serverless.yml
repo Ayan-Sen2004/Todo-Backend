@@ -14,23 +14,16 @@ provider:
     cors: true
 
   environment:
-  
     MONGO_URL: ${env:MONGO_URL, ''}
     DATABASE_NAME: ${env:DATABASE_NAME, ''}
 
-    # JWT
     SECRET_KEY: ${env:SECRET_KEY, ''}
     ALGORITHM: ${env:ALGORITHM, 'HS256'}
     ACCESS_TOKEN_EXPIRE_MINUTES: ${env:ACCESS_TOKEN_EXPIRE_MINUTES, '30'}
 
-    # Application
     APP_AWS_REGION: ${env:AWS_REGION, 'ap-south-1'}
     TZ: Asia/Kolkata
 
-
-# =========================================================
-# Lambda Functions
-# =========================================================
 
 functions:
 
@@ -38,7 +31,6 @@ functions:
     handler: app.main.handler
 
     events:
-
       - httpApi:
           path: /
           method: ANY
@@ -48,10 +40,6 @@ functions:
           method: ANY
 
 
-# =========================================================
-# Python Dependencies
-# =========================================================
-
 plugins:
 
   - serverless-python-requirements
@@ -60,18 +48,13 @@ plugins:
 custom:
 
   pythonRequirements:
-    dockerizePip: false
-    slim: true
+    dockerizePip: true
+    slim: false
 
-
-# =========================================================
-# Package
-# =========================================================
 
 package:
 
   patterns:
-
     - '!node_modules/**'
     - '!venv/**'
     - '!.venv/**'
