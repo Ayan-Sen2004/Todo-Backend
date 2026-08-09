@@ -1,11 +1,26 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from mangum import Mangum
 
-from app.routers.auth import router as auth_router
+from app.routers.auth import router as auth_router, seed_admin
 from app.routers.todo import router as todo_router
 
 
 app = FastAPI()
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.on_event("startup")
+async def startup_event():
+    await seed_admin()
 
 
 app.include_router(auth_router)
@@ -21,3 +36,4 @@ async def home():
 
 # AWS Lambda handler
 handler = Mangum(app)
+

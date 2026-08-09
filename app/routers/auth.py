@@ -20,6 +20,22 @@ router = APIRouter(
 
 
 # =========================
+# SEED ADMIN
+# =========================
+async def seed_admin():
+    admin = await user_collection.find_one({"email": "admin@todo.com"})
+    if not admin:
+        hashed = hash_password("admin123")
+        await user_collection.insert_one({
+            "username": "Admin",
+            "email": "admin@todo.com",
+            "password": hashed,
+            "role": "admin"
+        })
+        print("Seeded default admin user: admin@todo.com / admin123")
+
+
+# =========================
 # REGISTER
 # =========================
 
@@ -46,7 +62,8 @@ async def register(user: UserRegister):
     new_user = {
         "username": user.username,
         "email": user.email,
-        "password": hashed_password
+        "password": hashed_password,
+        "role": user.role or "user"
     }
 
     # Save user
@@ -98,7 +115,9 @@ async def login(user: UserLogin):
     return {
         "message": "Login successful",
         "access_token": access_token,
-        "token_type": "bearer"
+        "token_type": "bearer",
+        "role": db_user.get("role", "user"),
+        "username": db_user["username"]
     }
 
 @router.get("/me")
@@ -121,5 +140,99 @@ async def get_user_details(
     return {
         "id": str(user["_id"]),
         "username": user["username"],
-        "email": user["email"]
+        "email": user["email"],
+        "role": user.get("role", "user")
     }
+
+@router.get("/users")
+async def get_all_users(current_user=Depends(get_current_user)):
+    user_id = current_user["sub"]
+    user = await user_collection.find_one({"_id": ObjectId(user_id)})
+    if not user or user.get("role") != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Access forbidden: Admins only"
+        )
+    
+    users = []
+    async for u in user_collection.find():
+        users.append({
+            "id": str(u["_id"]),
+            "username": u["username"],
+            "email": u["email"],
+            "role": u.get("role", "user")
+        })
+    return users
+
+
+# =========================
+# RESET PASSWORD (Admin only)
+# =========================
+from app.schemas.user import ResetPassword
+
+@router.post("/reset-password")
+async def reset_password(
+    data: ResetPassword,
+    current_user=Depends(get_current_user)
+):
+    admin_id = current_user["sub"]
+    admin_user = await user_collection.find_one({"_id": ObjectId(admin_id)})
+    if not admin_user or admin_user.get("role") != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Access forbidden: Admins only"
+        )
+    
+    target_user = await user_collection.find_one({"_id": ObjectId(data.user_id)})
+    if not target_user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+    
+    # Hashing new password
+    hashed = hash_password(data.new_password)
+    
+    await user_collection.update_one(
+        {"_id": ObjectId(data.user_id)},
+        {"$set": {"password": hashed}}
+    )
+    
+    return {"message": "User password reset successfully"}
+
+
+# =========================
+# DELETE USER (Admin only)
+# =========================
+@router.delete("/users/{delete_user_id}")
+async def delete_user(
+    delete_user_id: str,
+    current_user=Depends(get_current_user)
+):
+    admin_id = current_user["sub"]
+    admin_user = await user_collection.find_one({"_id": ObjectId(admin_id)})
+    if not admin_user or admin_user.get("role") != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Access forbidden: Admins only"
+        )
+        
+    if admin_id == delete_user_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Admins cannot delete themselves"
+        )
+        
+    result = await user_collection.delete_one({"_id": ObjectId(delete_user_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+        
+    # Also clean up todos allocated to this user
+    from app.models.todo import todo_collection
+    await todo_collection.delete_many({"user_id": delete_user_id})
+    
+    return {"message": "User and their tasks deleted successfully"}
+
