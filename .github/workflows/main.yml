@@ -65,11 +65,13 @@ jobs:
 
 
       # ==========================================
-      # Install Python requirements plugin
+      # Install Serverless plugins
       # ==========================================
 
-      - name: Install Serverless Python Requirements
-        run: npm install --save-dev serverless-python-requirements@6.1.2
+      - name: Install Serverless plugins
+        run: |
+          npm install --save-dev serverless-python-requirements@6.1.2
+          npm install --save-dev serverless-dotenv-plugin
 
 
       # ==========================================
