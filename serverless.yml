@@ -1,5 +1,4 @@
 service: todo-deploy
-useDotenv: true
 
 provider:
   name: aws
@@ -15,14 +14,19 @@ provider:
     cors: true
 
   environment:
+    # MongoDB
     MONGO_URL: ${env:MONGO_URL, ''}
     DATABASE_NAME: ${env:DATABASE_NAME, ''}
 
+    # JWT
     SECRET_KEY: ${env:SECRET_KEY, ''}
     ALGORITHM: ${env:ALGORITHM, 'HS256'}
     ACCESS_TOKEN_EXPIRE_MINUTES: ${env:ACCESS_TOKEN_EXPIRE_MINUTES, '30'}
 
+    # AWS
     APP_AWS_REGION: ${env:AWS_REGION, 'ap-south-1'}
+
+    # Runtime
     TZ: Asia/Kolkata
 
 
@@ -44,7 +48,6 @@ functions:
 plugins:
 
   - serverless-python-requirements
-  - serverless-dotenv-plugin
 
 
 custom:
