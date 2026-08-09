@@ -14,7 +14,10 @@ def verify_password(
     plain_password: str,
     hashed_password: str
 ) -> bool:
-    return pwd_context.verify(
-        plain_password,
-        hashed_password
-    )
+    try:
+        return pwd_context.verify(
+            plain_password,
+            hashed_password
+        )
+    except Exception:
+        return False

@@ -47,7 +47,7 @@ async def register(user: UserRegister):
         "username": user.username,
         "email": user.email,
         "password": hashed_password,
-        "role": user.role or "user"
+        "role": "user"
     }
 
     # Save user
@@ -80,9 +80,10 @@ async def login(user: UserLogin):
         )
 
     # Check password
-    if not verify_password(
+    hashed_password = db_user.get("password")
+    if not hashed_password or not verify_password(
         user.password,
-        db_user["password"]
+        hashed_password
     ):
         raise HTTPException(
             status_code=401,
@@ -101,7 +102,7 @@ async def login(user: UserLogin):
         "access_token": access_token,
         "token_type": "bearer",
         "role": db_user.get("role", "user"),
-        "username": db_user["username"]
+        "username": db_user.get("username") or db_user.get("email")
     }
 
 @router.get("/me")
@@ -219,4 +220,3 @@ async def delete_user(
     await todo_collection.delete_many({"user_id": delete_user_id})
     
     return {"message": "User and their tasks deleted successfully"}
-
