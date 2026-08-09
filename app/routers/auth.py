@@ -47,7 +47,7 @@ async def register(user: UserRegister):
         "username": user.username,
         "email": user.email,
         "password": hashed_password,
-        "role": "user"
+       "role": user.role or "user"
     }
 
     # Save user
