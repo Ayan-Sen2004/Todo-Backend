@@ -28,6 +28,13 @@ async def create_todo(
         
     new_todo["created_at"] = datetime.now(timezone.utc)
 
+    # Save details of user/admin who assigned the task
+    new_todo["assigned_by_id"] = current_user["sub"]
+    admin_user = await user_collection.find_one({"_id": ObjectId(current_user["sub"])})
+    if admin_user:
+        new_todo["assigned_by_username"] = admin_user.get("username", "System")
+        new_todo["assigned_by_email"] = admin_user.get("email", "System")
+
     result = await todo_collection.insert_one(new_todo)
 
     return {
@@ -82,12 +89,20 @@ async def update_todo(
             detail="Todo not found"
         )
 
-    # If it is already completed, it is permanently locked
+    # If it is already completed, it is permanently locked unless bypassed by admin with a reason
     if existing_todo.get("done"):
-        raise HTTPException(
-            status_code=400,
-            detail="Task is completed and permanently locked"
-        )
+        if is_admin:
+            if todo.done == False:
+                if not todo.revert_reason or todo.revert_reason.strip() == "":
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Please provide a reason to revert this completed task to pending"
+                    )
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Task is completed and permanently locked"
+            )
 
     query = {"_id": ObjectId(todo_id)}
 
@@ -183,4 +198,4 @@ async def get_user_todos(
         todos.append(todo)
 
     return todos
-
+

@@ -8,6 +8,7 @@ class TodoCreate(BaseModel):
     desc: Optional[str] = None
     done: bool = False
     assigned_to: Optional[str] = None
+    revert_reason: Optional[str] = None
 
 
 class TodoResponse(TodoCreate):

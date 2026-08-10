@@ -220,3 +220,54 @@ async def delete_user(
     await todo_collection.delete_many({"user_id": delete_user_id})
     
     return {"message": "User and their tasks deleted successfully"}
+
+
+# =========================
+# UPDATE USER (Admin only)
+# =========================
+from app.schemas.user import UserUpdate
+
+@router.put("/users/{user_id}")
+async def update_user(
+    user_id: str,
+    data: UserUpdate,
+    current_user=Depends(get_current_user)
+):
+    admin_id = current_user["sub"]
+    admin_user = await user_collection.find_one({"_id": ObjectId(admin_id)})
+    if not admin_user or admin_user.get("role") != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Access forbidden: Admins only"
+        )
+    
+    target_user = await user_collection.find_one({"_id": ObjectId(user_id)})
+    if not target_user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+    
+    update_data = {}
+    if data.username is not None:
+        update_data["username"] = data.username
+    if data.email is not None:
+        existing_email = await user_collection.find_one({"email": data.email, "_id": {"$ne": ObjectId(user_id)}})
+        if existing_email:
+            raise HTTPException(
+                status_code=400,
+                detail="Email already registered"
+            )
+        update_data["email"] = data.email
+    if data.password is not None and data.password.strip() != "":
+        update_data["password"] = hash_password(data.password)
+    if data.role is not None:
+        update_data["role"] = data.role
+        
+    if update_data:
+        await user_collection.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": update_data}
+        )
+        
+    return {"message": "User updated successfully"}
