@@ -89,7 +89,7 @@ async def update_todo(
             detail="Todo not found"
         )
 
-    # If it is already completed, it is permanently locked unless bypassed by admin with a reason
+   
     if existing_todo.get("done"):
         if is_admin:
             if todo.done == False:
@@ -111,14 +111,14 @@ async def update_todo(
         if todo.assigned_to:
             update_data["user_id"] = todo.assigned_to
     else:
-        # User checks
+        
         if existing_todo["user_id"] != current_user["sub"]:
             raise HTTPException(
                 status_code=403,
                 detail="Not authorized to edit this task"
             )
         
-        # Users can only mark tasks as done (done=True) and cannot change other fields
+        
         if not todo.done:
             raise HTTPException(
                 status_code=400,
@@ -151,11 +151,11 @@ async def delete_todo(
     todo_id: str,
     current_user=Depends(get_current_user)
 ):
-    # Check user role
+   
     db_user = await user_collection.find_one({"_id": ObjectId(current_user["sub"])})
     is_admin = db_user and db_user.get("role") == "admin"
 
-    # Only admins can delete tasks
+   
     if not is_admin:
         raise HTTPException(
             status_code=403,

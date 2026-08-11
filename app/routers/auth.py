@@ -1,16 +1,12 @@
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException, Depends
 from app.utils.dependency import get_current_user
-
 from app.models.user import user_collection
-from app.schemas.user import UserRegister, UserLogin
-
-from app.utils.hash import (
-    hash_password,
-    verify_password
-)
-
+from app.models.todo import todo_collection
+from app.schemas.user import UserRegister, UserLogin, ResetPassword, UserUpdate
 from app.utils.jwt import create_access_token
+from app.utils.hash import hash_password, verify_password
+
 
 
 router = APIRouter(
@@ -19,14 +15,11 @@ router = APIRouter(
 )
 
 
-# =========================
-# REGISTER
-# =========================
 
 @router.post("/register")
 async def register(user: UserRegister):
 
-    # Check existing email
+    
     existing_user = await user_collection.find_one(
         {"email": user.email}
     )
@@ -37,12 +30,10 @@ async def register(user: UserRegister):
             detail="Email already registered"
         )
 
-    # Hash password
     hashed_password = hash_password(
         user.password
     )
 
-    # User document
     new_user = {
         "username": user.username,
         "email": user.email,
@@ -50,7 +41,6 @@ async def register(user: UserRegister):
        "role": user.role or "user"
     }
 
-    # Save user
     result = await user_collection.insert_one(
         new_user
     )
@@ -61,14 +51,11 @@ async def register(user: UserRegister):
     }
 
 
-# =========================
-# LOGIN
-# =========================
+
 
 @router.post("/login")
 async def login(user: UserLogin):
 
-    # Find user by email
     db_user = await user_collection.find_one(
         {"email": user.email}
     )
@@ -79,7 +66,6 @@ async def login(user: UserLogin):
             detail="Invalid email or password"
         )
 
-    # Check password
     hashed_password = db_user.get("password")
     if not hashed_password or not verify_password(
         user.password,
@@ -90,7 +76,6 @@ async def login(user: UserLogin):
             detail="Invalid email or password"
         )
 
-    # Generate JWT
     access_token = create_access_token(
         {
             "sub": str(db_user["_id"])
@@ -150,10 +135,8 @@ async def get_all_users(current_user=Depends(get_current_user)):
     return users
 
 
-# =========================
-# RESET PASSWORD (Admin only)
-# =========================
-from app.schemas.user import ResetPassword
+
+
 
 @router.post("/reset-password")
 async def reset_password(
@@ -186,9 +169,7 @@ async def reset_password(
     return {"message": "User password reset successfully"}
 
 
-# =========================
-# DELETE USER (Admin only)
-# =========================
+
 @router.delete("/users/{delete_user_id}")
 async def delete_user(
     delete_user_id: str,
@@ -215,17 +196,14 @@ async def delete_user(
             detail="User not found"
         )
         
-    # Also clean up todos allocated to this user
-    from app.models.todo import todo_collection
+   
+    
     await todo_collection.delete_many({"user_id": delete_user_id})
     
     return {"message": "User and their tasks deleted successfully"}
 
 
-# =========================
-# UPDATE USER (Admin only)
-# =========================
-from app.schemas.user import UserUpdate
+
 
 @router.put("/users/{user_id}")
 async def update_user(
